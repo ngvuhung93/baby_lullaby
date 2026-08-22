@@ -25,31 +25,34 @@
     -webkit-user-select:none;
     user-select:none;
   }
-  main{display:flex;flex-direction:column;align-items:center;gap:1rem;padding:2rem 1.25rem;width:100%;max-width:30rem}
+  main{display:flex;flex-direction:column;align-items:center;padding:2rem 1.25rem;width:100%;max-width:30rem}
   .moon{font-size:3.4rem;line-height:1;text-shadow:0 0 36px rgba(150,170,255,.35)}
-  h1{font-size:1.25rem;font-weight:500;letter-spacing:.04em;color:#dde4fb}
+  h1{font-size:1.25rem;font-weight:500;letter-spacing:.04em;color:#dde4fb;margin-top:.9rem}
+  .track{margin-top:.6rem}
   .track a{color:#8fa0e8;text-decoration:none;font-size:.95rem}
   .track a:hover{text-decoration:underline}
-  #status{font-size:.85rem;color:#78829f;min-height:1.2em}
+  #status{font-size:.85rem;color:#78829f;min-height:1.2em;margin-top:.7rem}
   #status.playing{color:#9fd6a9}
   button{
     font:inherit;color:#c9d2ee;background:rgba(255,255,255,.05);
     border:1px solid rgba(255,255,255,.12);border-radius:999px;
     padding:.55rem 1.4rem;cursor:pointer;font-size:.95rem;
+    -webkit-appearance:none;
   }
   button:hover{background:rgba(255,255,255,.1)}
-  #startBtn{padding:.7rem 2.2rem;background:rgba(143,160,232,.14);border-color:rgba(143,160,232,.35)}
-  #errorBtn{background:rgba(143,160,232,.14);border-color:rgba(143,160,232,.35)}
-  .controls{display:flex;flex-direction:column;align-items:center;gap:.85rem;margin-top:.3rem}
-  .transport{display:flex;gap:.6rem}
-  .volume{display:flex;align-items:center;gap:.6rem;font-size:.8rem;color:#78829f;cursor:default}
-  input[type=range]{accent-color:#8fa0e8;width:min(11rem,58vw)}
-  .credit{font-size:.72rem;color:#5a6280;margin-top:.5rem;line-height:1.6}
+  #startBtn{padding:.7rem 2.2rem;background:rgba(143,160,232,.14);border-color:rgba(143,160,232,.35);margin-top:1rem}
+  #errorBtn{background:rgba(143,160,232,.14);border-color:rgba(143,160,232,.35);margin-top:1rem}
+  .controls{display:flex;flex-direction:column;align-items:center;margin-top:1.1rem}
+  .transport{display:flex;margin-bottom:.9rem}
+  #pauseBtn{margin-left:.6rem}
+  .volume{display:flex;align-items:center;font-size:.8rem;color:#78829f;cursor:default;margin-bottom:.9rem}
+  input[type=range]{width:11rem;max-width:60vw;margin-left:.6rem}
+  #wakeBtn{margin-bottom:.85rem}
+  .credit{font-size:.72rem;color:#5a6280;margin-top:.6rem;line-height:1.7}
   .credit a{color:#78829f}
   [hidden]{display:none!important}
   body.sleep-mode{background:#020308;background-image:none;cursor:none}
   body.sleep-mode main>:not(.moon){display:none}
-  body.sleep-mode main{gap:0}
   body.sleep-mode .moon{opacity:.15;text-shadow:none;font-size:2.6rem}
   .hint{
     position:fixed;bottom:1.4rem;left:0;right:0;
@@ -57,14 +60,14 @@
     animation:hintFade 5s ease forwards;
   }
   @keyframes hintFade{0%{opacity:0}20%{opacity:1}70%{opacity:1}100%{opacity:0}}
-  #sc-player{position:fixed;left:0;bottom:0;width:100%;height:166px;border:0;opacity:0;pointer-events:none}
+  audio{display:none}
 </style>
 </head>
 <body>
 <main>
   <div class="moon" aria-hidden="true">🌙</div>
   <h1>Baby Sleep Music</h1>
-  <p class="track"><a href="https://soundcloud.com/zahraazreik/sleep-instantly-within-3" target="_blank" rel="noopener">♪ Sleep Instantly Within…</a></p>
+  <p class="track"><a id="trackLink" href="#" target="_blank" rel="noopener">♪ Mozart Brahms Lullaby</a></p>
   <p id="status">Loading sleep music…</p>
   <button id="startBtn" hidden>Start Music</button>
   <div class="controls" id="controls" hidden>
@@ -76,28 +79,40 @@
     <button id="wakeBtn">Keep Screen Awake: Off</button>
     <button id="sleepBtn">🌙 Sleep Mode</button>
   </div>
-  <button id="errorBtn" hidden onclick="window.open('https://soundcloud.com/zahraazreik/sleep-instantly-within-3','_blank','noopener')">Open on SoundCloud</button>
+  <button id="errorBtn" hidden>Open Track Page</button>
   <p class="credit">
-    “Sleep Instantly Within…” by Zahraa Azreik<br>
-    <a href="https://soundcloud.com/zahraazreik/sleep-instantly-within-3" target="_blank" rel="noopener">Listen on SoundCloud</a>
+    “Mozart Brahms Lullaby · Bedtime Routine for Babies”<br>
+    by Youssef Elhammouchi · hosted on <a id="creditLink" href="#" target="_blank" rel="noopener">audio.com</a>
   </p>
 </main>
 
-<iframe
-  id="sc-player"
-  title="SoundCloud player"
-  width="100%"
-  height="166"
-  scrolling="no"
-  frameborder="no"
-  allow="autoplay"
-  src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fsoundcloud.com%2Fzahraazreik%2Fsleep-instantly-within-3&amp;auto_play=true&amp;hide_related=true&amp;show_comments=false&amp;show_user=false&amp;show_reposts=false&amp;show_teaser=false&amp;visual=false">
-</iframe>
+<audio id="player" loop preload="auto"></audio>
 
-<script src="https://w.soundcloud.com/player/api.js"></script>
 <script>
 (function () {
   "use strict";
+
+  var AUDIO_PAGE = "https://audio.com/youssef-elhammouchi/audio/mozart-brahms-lullaby-bedtime-routine-for-babies-sleep-in-3-minutes-baby-sleep-fast";
+  var READER = "https://r.jina.ai/";
+  var TRACK_ID = "07/45/1832353103194507-1832353103212273";
+  var FALLBACK_URL =
+    "https://s3.ustatik.com/audio.com.audio/transcoding/" + TRACK_ID +
+    "-1832353407829829.mp3?X-Amz-Content-Sha256=UNSIGNED-PAYLOAD" +
+    "&X-Amz-Algorithm=AWS4-HMAC-SHA256" +
+    "&X-Amz-Credential=F0E8U41NBMMW3Y027UTJ%2F20260821%2Feu-central-1%2Fs3%2Faws4_request" +
+    "&X-Amz-Date=20260821T150747Z&X-Amz-SignedHeaders=host&X-Amz-Expires=518400" +
+    "&X-Amz-Signature=43b7a29802bc71fceb3d480a93b3473fb96b91411f52b0221e2f9871d7d611c2";
+  var STREAM_RE = new RegExp(
+    "https:[^\"'\\\\\\s<>]*audio\\.com\\.audio/transcoding/" +
+    TRACK_ID.replace(/-/g, "\\-") +
+    "-\\d+\\.mp3\\?[^\"'\\\\\\s<>]*X-Amz-Signature=[A-Fa-f0-9]+"
+  );
+
+  document.getElementById("trackLink").href = AUDIO_PAGE;
+  document.getElementById("creditLink").href = AUDIO_PAGE;
+  document.getElementById("errorBtn").onclick = function () {
+    window.open(AUDIO_PAGE, "_blank", "noopener");
+  };
 
   var els = {
     status:   document.getElementById("status"),
@@ -110,13 +125,14 @@
     sleepBtn: document.getElementById("sleepBtn"),
     errorBtn: document.getElementById("errorBtn")
   };
+  var player = document.getElementById("player");
 
-  var widget = null;
-  var ready = false;
+  var sources = ["lullaby.mp3"];
+  var sourceIndex = -1;
+  var refreshed = false;
+  var usingFresh = false;
+  var triedFallback = false;
   var hasPlayed = false;
-  var legacyBrowser = false;
-  try { new Function("async () => { var x = (a?.b) ?? 1; }"); }
-  catch (e) { legacyBrowser = true; }
   var sleepEnteredAt = 0;
   var wakeLock = null;
   var wakeEnabled = false;
@@ -137,75 +153,120 @@
     els.startBtn.hidden = true;
     els.controls.hidden = true;
     els.errorBtn.hidden = false;
-    updatePlaybackStatus(
-      legacyBrowser
-        ? "This device's software is too old for the SoundCloud player."
-        : "Unable to load the music.",
-      false
-    );
-  }
-
-  function initializePlayer() {
-    widget = SC.Widget(document.getElementById("sc-player"));
-
-    widget.bind(SC.Widget.Events.READY, function () {
-      ready = true;
-      applyVolume();
-      attemptAutoplay();
-    });
-
-    widget.bind(SC.Widget.Events.PLAY, function () {
-      hasPlayed = true;
-      els.startBtn.hidden = true;
-      els.errorBtn.hidden = true;
-      els.controls.hidden = false;
-      updatePlaybackStatus("● Playing", true);
-    });
-
-    widget.bind(SC.Widget.Events.PAUSE, function () {
-      updatePlaybackStatus("○ Paused", false);
-    });
-
-    widget.bind(SC.Widget.Events.FINISH, handleTrackFinished);
-    widget.bind(SC.Widget.Events.ERROR, showError);
-
-    setTimeout(function () {
-      if (!ready) { showError(); }
-    }, legacyBrowser ? 7000 : 12000);
-  }
-
-  function attemptAutoplay() {
-    updatePlaybackStatus("Waiting for interaction", false);
-    widget.play();
-    setTimeout(function () {
-      if (hasPlayed) { return; }
-      widget.isPaused(function (paused) {
-        if (paused && !hasPlayed) {
-          els.startBtn.hidden = false;
-        }
-      });
-    }, 1500);
+    updatePlaybackStatus("Unable to load the music.", false);
   }
 
   function startPlayback() {
-    if (widget) { widget.play(); }
+    var p = player.play();
+    if (p && p.catch) { p.catch(function () {}); }
   }
 
   function pausePlayback() {
-    if (widget) { widget.pause(); }
+    player.pause();
   }
 
-  function handleTrackFinished() {
-    widget.seekTo(0);
-    widget.play();
+  function loadSource(url) {
+    els.startBtn.hidden = true;
+    updatePlaybackStatus("Loading sleep music…", false);
+    player.src = url;
+    player.load();
+    startPlayback();
+    promptIfBlocked();
   }
 
-  function applyVolume() {
-    if (ready && widget) {
-      widget.setVolume(Number(els.volume.value));
+  function promptIfBlocked() {
+    setTimeout(function () {
+      if (player.paused && !hasPlayed) {
+        els.startBtn.hidden = false;
+        updatePlaybackStatus("Waiting for interaction", false);
+      }
+    }, 2500);
+  }
+
+  function loadNext() {
+    sourceIndex++;
+    if (sourceIndex < sources.length) {
+      loadSource(sources[sourceIndex]);
+    } else {
+      tryRefresh();
     }
   }
 
+  function tryFallback() {
+    if (triedFallback) { showError(); return; }
+    triedFallback = true;
+    usingFresh = false;
+    loadSource(FALLBACK_URL);
+  }
+
+  function tryRefresh() {
+    if (refreshed) { tryFallback(); return; }
+    refreshed = true;
+    updatePlaybackStatus("Refreshing audio link…", false);
+    fetchText(READER + AUDIO_PAGE, function (text) {
+      var url = extractStreamUrl(text);
+      if (!url) { tryFallback(); return; }
+      store("streamUrl", url);
+      usingFresh = true;
+      loadSource(url);
+    }, tryFallback);
+  }
+
+  function fetchText(url, ok, fail) {
+    try {
+      var x = new XMLHttpRequest();
+      x.open("GET", url, true);
+      x.timeout = 45000;
+      x.onload = function () {
+        if (x.status === 200 && x.responseText) { ok(x.responseText); } else { fail(); }
+      };
+      x.onerror = fail;
+      x.ontimeout = fail;
+      x.send(null);
+    } catch (e) { fail(); }
+  }
+
+  function extractStreamUrl(text) {
+    var m = text.match(STREAM_RE);
+    return m ? m[0].replace(/&amp;/g, "&") : null;
+  }
+
+  function initializePlayer() {
+    var cached = read("streamUrl");
+    if (cached) { sources.push(cached); }
+    loadNext();
+  }
+
+  player.addEventListener("loadedmetadata", function () {
+    startPlayback();
+  });
+  player.addEventListener("playing", function () {
+    hasPlayed = true;
+    els.startBtn.hidden = true;
+    els.errorBtn.hidden = true;
+    els.controls.hidden = false;
+    updatePlaybackStatus("● Playing", true);
+  });
+  player.addEventListener("pause", function () {
+    if (hasPlayed) { updatePlaybackStatus("○ Paused", false); }
+  });
+  player.addEventListener("waiting", function () {
+    if (!player.paused) { updatePlaybackStatus("Buffering…", false); }
+  });
+  player.addEventListener("ended", function () {
+    if (!player.loop) {
+      try { player.currentTime = 0; } catch (e) {}
+      startPlayback();
+    }
+  });
+  player.addEventListener("error", function () {
+    if (usingFresh) { tryFallback(); return; }
+    loadNext();
+  });
+
+  function applyVolume() {
+    player.volume = Number(els.volume.value) / 100;
+  }
   function onVolumeChange() {
     applyVolume();
     store("volume", els.volume.value);
@@ -277,20 +338,14 @@
 
   var savedVolume = read("volume");
   if (savedVolume !== null) { els.volume.value = savedVolume; }
+  applyVolume();
 
   if (read("sleepMode") === "true") {
     document.body.classList.add("sleep-mode");
     sleepEnteredAt = Date.now();
   }
 
-  if (window.SC) {
-    initializePlayer();
-    if (legacyBrowser) {
-      updatePlaybackStatus("Old browser detected, trying…", false);
-    }
-  } else {
-    showError();
-  }
+  initializePlayer();
 })();
 </script>
 </body>
