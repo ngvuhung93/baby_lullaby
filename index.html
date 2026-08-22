@@ -11,6 +11,7 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
+    min-height:100vh;
     min-height:100dvh;
     display:flex;
     align-items:center;
@@ -21,6 +22,7 @@
     font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     text-align:center;
     -webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none;
     user-select:none;
   }
   main{display:flex;flex-direction:column;align-items:center;gap:1rem;padding:2rem 1.25rem;width:100%;max-width:30rem}
@@ -112,6 +114,9 @@
   var widget = null;
   var ready = false;
   var hasPlayed = false;
+  var legacyBrowser = false;
+  try { new Function("async () => { var x = (a?.b) ?? 1; }"); }
+  catch (e) { legacyBrowser = true; }
   var sleepEnteredAt = 0;
   var wakeLock = null;
   var wakeEnabled = false;
@@ -132,7 +137,12 @@
     els.startBtn.hidden = true;
     els.controls.hidden = true;
     els.errorBtn.hidden = false;
-    updatePlaybackStatus("Unable to load the music.", false);
+    updatePlaybackStatus(
+      legacyBrowser
+        ? "This device's software is too old for the SoundCloud player."
+        : "Unable to load the music.",
+      false
+    );
   }
 
   function initializePlayer() {
@@ -147,6 +157,7 @@
     widget.bind(SC.Widget.Events.PLAY, function () {
       hasPlayed = true;
       els.startBtn.hidden = true;
+      els.errorBtn.hidden = true;
       els.controls.hidden = false;
       updatePlaybackStatus("● Playing", true);
     });
@@ -160,7 +171,7 @@
 
     setTimeout(function () {
       if (!ready) { showError(); }
-    }, 12000);
+    }, legacyBrowser ? 7000 : 12000);
   }
 
   function attemptAutoplay() {
@@ -193,6 +204,11 @@
     if (ready && widget) {
       widget.setVolume(Number(els.volume.value));
     }
+  }
+
+  function onVolumeChange() {
+    applyVolume();
+    store("volume", els.volume.value);
   }
 
   function enableSleepMode() {
@@ -235,10 +251,8 @@
   els.playBtn.addEventListener("click", startPlayback);
   els.pauseBtn.addEventListener("click", pausePlayback);
   els.startBtn.addEventListener("click", startPlayback);
-  els.volume.addEventListener("input", function () {
-    applyVolume();
-    store("volume", els.volume.value);
-  });
+  els.volume.addEventListener("input", onVolumeChange);
+  els.volume.addEventListener("change", onVolumeChange);
   els.wakeBtn.addEventListener("click", function () {
     setKeepAwake(!wakeEnabled);
   });
@@ -271,6 +285,9 @@
 
   if (window.SC) {
     initializePlayer();
+    if (legacyBrowser) {
+      updatePlaybackStatus("Old browser detected, trying…", false);
+    }
   } else {
     showError();
   }
